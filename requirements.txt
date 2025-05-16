@@ -1,0 +1,6 @@
+flask 
+flask_sqlalchemy 
+flask_mail
+flask-mysqldb
+mysql-connector-python
+razorpay

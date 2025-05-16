@@ -1,0 +1,174 @@
+{% extends 'base.html' %}
+
+{% block title %}Payment - {{ course.title }}{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row">
+        <div class="col-md-8 mx-auto">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">Payment Details</h4>
+                </div>
+                <div class="card-body">
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <h5>Course Information</h5>
+                            <p class="mb-1"><strong>{{ course.title }}</strong></p>
+                            <p class="mb-1">{{ course.description|truncate(100) }}</p>
+                            <p class="mb-0"><strong>Duration:</strong> {{ course.duration }}</p>
+                        </div>
+                        <div class="col-md-6 text-md-end">
+                            <h5>Invoice Details</h5>
+                            <p class="mb-1"><strong>Date:</strong> {{ now.strftime('%d %b, %Y') }}</p>
+                            <p class="mb-1"><strong>Invoice #:</strong> INV-{{ now.strftime('%Y%m%d') }}-{{ course.id }}</p>
+                        </div>
+                    </div>
+
+                    <hr>
+                    
+                    <div class="table-responsive">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Item</th>
+                                    <th class="text-end">Amount</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>Course Price</td>
+                                    <td class="text-end">₹{{ course.price }}</td>
+                                </tr>
+                                <tr>
+                                    <td>GST (18%)</td>
+                                    <td class="text-end">₹{{ tax }}</td>
+                                </tr>
+                                <tr class="fw-bold">
+                                    <td>Total</td>
+                                    <td class="text-end">₹{{ total }}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <hr>
+                    
+                    <div class="d-grid gap-2">
+                        <button id="rzp-button" class="btn btn-primary btn-lg">Pay Now</button>
+                    </div>
+                    
+                    <!-- Payment Status indicator -->
+                    <div id="payment-status" class="mt-3 text-center" style="display: none;">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Processing payment...</span>
+                        </div>
+                        <p class="mt-2" id="status-message">Processing your payment...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+<script>
+    document.getElementById('rzp-button').onclick = function(e) {
+        e.preventDefault();
+        
+        // Show payment status indicator
+        document.getElementById('payment-status').style.display = 'block';
+        document.getElementById('rzp-button').disabled = true;
+        
+        var options = {
+            "key": "rzp_test_JkbAxq5JbkMpIB",
+            "amount": "{{ (total * 100)|int }}", // amount in smallest currency unit
+            "currency": "INR",
+            "name": "Course Platform",
+            "description": "{{ course.title }}",
+            "image": "/static/logo/logo.png",
+            "order_id": "{{ razorpay_order_id }}", // This is new, from the server
+            "handler": function (response) {
+                // Update status message
+                document.getElementById('status-message').innerText = "Payment successful! Completing registration...";
+                
+                // Submit payment info to server
+                var form = document.createElement('form');
+                form.method = 'POST';
+                form.action = '/process-payment';
+                
+                var csrfInput = document.createElement('input');
+                csrfInput.type = 'hidden';
+                csrfInput.name = 'csrf_token';
+                csrfInput.value = "{{ csrf_token() if csrf_token else '' }}";
+                form.appendChild(csrfInput);
+                
+                var courseIdInput = document.createElement('input');
+                courseIdInput.type = 'hidden';
+                courseIdInput.name = 'course_id';
+                courseIdInput.value = "{{ course.id }}";
+                form.appendChild(courseIdInput);
+                
+                var paymentIdInput = document.createElement('input');
+                paymentIdInput.type = 'hidden';
+                paymentIdInput.name = 'payment_id';
+                paymentIdInput.value = response.razorpay_payment_id;
+                form.appendChild(paymentIdInput);
+                
+                var orderIdInput = document.createElement('input');
+                orderIdInput.type = 'hidden';
+                orderIdInput.name = 'razorpay_order_id';
+                orderIdInput.value = response.razorpay_order_id;
+                form.appendChild(orderIdInput);
+                
+                var signatureInput = document.createElement('input');
+                signatureInput.type = 'hidden';
+                signatureInput.name = 'razorpay_signature';
+                signatureInput.value = response.razorpay_signature;
+                form.appendChild(signatureInput);
+                
+                document.body.appendChild(form);
+                form.submit();
+            },
+            "prefill": {
+                "name": "{{ session.get('user_name', '') }}",
+                "email": "{{ user_email }}"
+            },
+            "theme": {
+                "color": "#3399cc"
+            },
+            "modal": {
+                "ondismiss": function() {
+                    // Reset UI if payment modal is dismissed
+                    document.getElementById('payment-status').style.display = 'none';
+                    document.getElementById('rzp-button').disabled = false;
+                    console.log("Payment modal closed by user");
+                }
+            }
+        };
+        
+        try {
+            var rzp1 = new Razorpay(options);
+            rzp1.on('payment.failed', function (response) {
+                document.getElementById('status-message').innerText = "Payment failed: " + response.error.description;
+                document.getElementById('status-message').classList.add('text-danger');
+                document.getElementById('rzp-button').disabled = false;
+                console.error("Payment failed", response.error);
+                
+                // Display error to user after a short delay
+                setTimeout(function() {
+                    document.getElementById('payment-status').style.display = 'none';
+                    document.getElementById('status-message').classList.remove('text-danger');
+                    alert("Payment failed: " + response.error.description);
+                }, 1000);
+            });
+            rzp1.open();
+        } catch (error) {
+            document.getElementById('status-message').innerText = "Error initializing payment: " + error.message;
+            document.getElementById('status-message').classList.add('text-danger');
+            document.getElementById('rzp-button').disabled = false;
+            console.error("Error initializing Razorpay", error);
+        }
+    }
+</script>
+{% endblock %}
