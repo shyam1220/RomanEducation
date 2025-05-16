@@ -7,7 +7,6 @@ from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from datetime import datetime, timedelta
 import secrets
-import json
 
 
 from controllers.auth import auth_bp
@@ -24,18 +23,6 @@ from decimal import Decimal
 app = Flask(__name__)
 app.secret_key = secrets.token_hex(16)
 
-# Configure session to work with Vercel serverless environment
-app.config.update(
-    SESSION_COOKIE_SECURE=True,           # For HTTPS
-    SESSION_COOKIE_HTTPONLY=True,         # Prevent XSS
-    SESSION_COOKIE_SAMESITE='Lax',        # CSRF protection
-    PERMANENT_SESSION_LIFETIME=timedelta(minutes=10)  # Extend session lifetime
-)
-
-# Make sessions "permanent" by default (they'll last for PERMANENT_SESSION_LIFETIME time)
-@app.before_request
-def make_session_permanent():
-    session.permanent = True
 
 # Register blueprints
 app.register_blueprint(auth_bp, url_prefix='/auth')
@@ -44,18 +31,28 @@ app.register_blueprint(user_bp, url_prefix='/user')
 app.register_blueprint(payment_bp, url_prefix='/payment')
 
 # Database configuration
+# db_config = {
+#     'host': 'localhost',
+#     'user': 'root',
+#     'password': '',  # Default XAMPP password is empty
+#     'database': 'course_registration'
+# }
+
 db_config = {
-    'host': 'bnpn8bf9dbappwuwevvh-mysql.services.clever-cloud.com',
-    'user': 'uvtqwkyuu61gaskr',
-    'password': 'YOM0ukqfeqYpmBuAMsIJ',
-    'database': 'bnpn8bf9dbappwuwevvh',
-    'port': 3306
+    'host': 'bnpn8bf9dbappwuwevvh-mysql.services.clever-cloud.com',  # Replace with your host
+    'user': 'uvtqwkyuu61gaskr',               # Replace with your username
+    'password': 'YOM0ukqfeqYpmBuAMsIJ',           # Replace with your password
+    'database': 'bnpn8bf9dbappwuwevvh',           # Replace with your database name
+    'port': 3306                                        # MySQL default port
 }
+
+
 
 # Initialize Razorpay client
 razorpay_client = razorpay.Client(
     auth=("rzp_test_JkbAxq5JbkMpIB", "B8lCButNGCldzgnZ6MYI25Mb")
 )
+
 
 # Helper functions
 def get_db_connection():
@@ -140,11 +137,14 @@ def verify_otp(email, otp, purpose):
     conn.close()
     return False
 
+
+
 # Tax calculation function
 def calculate_tax(price):
     """Calculate tax (18%) from a price"""
     tax_rate = Decimal('0.18')
     return price * tax_rate
+
 
 def get_course_image_by_title(title):
     """
@@ -177,6 +177,8 @@ def get_course_image_by_title(title):
                                              "japanese", "chinese", "italian"]):
         return "/static/images/courses/language.jpg"
     
+   
+    
     # Default image if no specific category is matched
     else:
         return "/static/images/courses/careerboost.jpg"
@@ -184,15 +186,15 @@ def get_course_image_by_title(title):
 @app.context_processor
 def utility_processor():
     return dict(get_course_image_by_title=get_course_image_by_title)
-
 # Routes
+
 @app.route('/')
 def index():
     if 'user_id' in session:
-        # Add session debugging for Vercel environment
-        print(f"Session at index: {json.dumps(dict(session), default=str)}")
         return redirect(url_for('user_home'))
     return redirect(url_for('login'))
+
+
 
 @app.context_processor
 def inject_globals():
@@ -381,14 +383,9 @@ def verify_login():
             conn.close()
             
             if user:
-                # Add these session values
                 session['user_id'] = user['id']
                 session['user_name'] = f"{user['first_name']} {user['last_name']}"
                 session.pop('login_email', None)
-                
-                # Debug session info
-                print(f"Session after login: {json.dumps(dict(session), default=str)}")
-                
                 return redirect(url_for('user_home'))
         
         flash('Invalid or expired OTP. Please try again.', 'danger')
@@ -397,11 +394,7 @@ def verify_login():
 
 @app.route('/user-home')
 def user_home():
-    # Debug session info
-    print(f"Session at user_home: {json.dumps(dict(session), default=str)}")
-    
     if 'user_id' not in session:
-        print("No user_id in session, redirecting to login")
         return redirect(url_for('login'))
     
     conn = get_db_connection()
@@ -427,11 +420,7 @@ def user_home():
 
 @app.route('/all-courses')
 def all_courses():
-    # Debug session info
-    print(f"Session at all_courses: {json.dumps(dict(session), default=str)}")
-    
     if 'user_id' not in session:
-        print("No user_id in session, redirecting to login")
         return redirect(url_for('login'))
     
     conn = get_db_connection()
@@ -460,11 +449,7 @@ def all_courses():
 
 @app.route('/registered-courses')
 def registered_courses():
-    # Debug session info
-    print(f"Session at registered_courses: {json.dumps(dict(session), default=str)}")
-    
     if 'user_id' not in session:
-        print("No user_id in session, redirecting to login")
         return redirect(url_for('login'))
     
     conn = get_db_connection()
@@ -486,11 +471,7 @@ def registered_courses():
 
 @app.route('/payment/<int:course_id>')
 def payment(course_id):
-    # Debug session info
-    print(f"Session at payment: {json.dumps(dict(session), default=str)}")
-    
     if 'user_id' not in session:
-        print("No user_id in session, redirecting to login")
         return redirect(url_for('login'))
     
     conn = get_db_connection()
@@ -557,13 +538,10 @@ def payment(course_id):
                            user_email=user_email,
                            now=datetime.now())
 
+
 @app.route('/process-payment', methods=['POST'])
 def process_payment():
-    # Debug session info
-    print(f"Session at process_payment: {json.dumps(dict(session), default=str)}")
-    
     if 'user_id' not in session:
-        print("No user_id in session, redirecting to login")
         return redirect(url_for('login'))
     
     # Get payment details
@@ -721,6 +699,7 @@ def process_payment():
 def logout():
     session.clear()
     return redirect(url_for('login'))
+
 
 @app.context_processor
 def inject_now():
