@@ -1,0 +1,146 @@
+/* Main stylesheet for Course Registration System */
+
+/* Global Styles */
+body {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    background-color: #f8f9fa;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.container {
+    flex: 1;
+}
+
+.footer {
+    margin-top: auto;
+}
+
+/* Card Styling */
+.card {
+    border-radius: 0.5rem;
+    border: none;
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+    transition: all 0.3s ease;
+}
+
+.card:hover {
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+}
+
+.card-header {
+    border-radius: 0.5rem 0.5rem 0 0 !important;
+    border-bottom: none;
+}
+
+/* Form Styling */
+.form-control:focus {
+    border-color: #80bdff;
+    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+}
+
+.form-floating > .form-control:focus ~ label {
+    color: #0d6efd;
+}
+
+/* Button Styling */
+.btn {
+    border-radius: 0.3rem;
+    padding: 0.5rem 1rem;
+    transition: all 0.2s ease;
+}
+
+.btn-primary {
+    background-color: #0d6efd;
+    border-color: #0d6efd;
+}
+
+.btn-primary:hover {
+    background-color: #0b5ed7;
+    border-color: #0a58ca;
+}
+
+/* OTP Input Style */
+input[name="otp"] {
+    letter-spacing: 0.5rem;
+    font-weight: bold;
+}
+
+/* Navbar Styling */
+.navbar {
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.navbar-brand {
+    font-weight: bold;
+    font-size: 1.5rem;
+}
+
+/* Course Cards */
+.course-card {
+    height: 100%;
+    transition: transform 0.3s ease;
+}
+
+.course-card:hover {
+    transform: translateY(-5px);
+}
+
+/* Alert Styling */
+.alert {
+    border-radius: 0.5rem;
+    border: none;
+}
+
+/* Custom Badges */
+.badge {
+    font-weight: 500;
+    padding: 0.4em 0.7em;
+    border-radius: 0.3rem;
+}
+
+/* Payment Form Styling */
+#cardNumber, #expDate, #cvv {
+    font-family: monospace;
+    letter-spacing: 0.1rem;
+}
+
+/* Progress Bar */
+.progress {
+    height: 0.5rem;
+    border-radius: 1rem;
+    background-color: #e9ecef;
+}
+
+.progress-bar {
+    border-radius: 1rem;
+}
+
+/* User Profile Icons */
+.profile-icon {
+    font-size: 6rem;
+    color: #0d6efd;
+}
+
+/* Course Status Badges */
+.completed {
+    background-color: #28a745;
+}
+
+.in-progress {
+    background-color: #ffc107;
+}
+
+.not-started {
+    background-color: #6c757d;
+}
+
+/* Animation for Loading */
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+.spinner-border {
+    animation: spin 1s linear infinite;
+}
